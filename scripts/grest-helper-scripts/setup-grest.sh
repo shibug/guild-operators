@@ -52,6 +52,7 @@
         exit 1
       fi
       checkUpdate env N N N
+      ENV_UPDATED=N
       case $? in
         1) ENV_UPDATED=Y ;;
         2) exit 1 ;;
