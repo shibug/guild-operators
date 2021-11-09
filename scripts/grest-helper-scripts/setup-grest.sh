@@ -59,6 +59,7 @@
       esac
       # check for setup-grest update
       checkUpdate setup-grest.sh ${ENV_UPDATED} N N grest-helper-scripts
+      echo
     fi
     . "${PARENT}"/env offline &>/dev/null
     case $? in
@@ -83,9 +84,9 @@
 
   get_cron_job_executable() {
     local job=$1
-    local job_path="${CRON_SCRIPTS_DIR}/${CNODE_VNAME}-${job}.sh"
+    local job_path="${CRON_SCRIPTS_DIR}/${job}.sh"
     local job_url="${URL_RAW}/files/grest/cron/jobs/${job}.sh"
-    is_file "${job_path}" && sudo rm "${job_path}"
+    is_file "${job_path}" && rm "${job_path}"
     if curl -s -f -m "${CURL_TIMEOUT}" -o "${job_path}" "${job_url}"; then
       echo -e "      Downloaded \e[32m${job_path}\e[0m"
       chmod +x "${job_path}"
@@ -98,8 +99,8 @@
     local job=$1
     local cron_pattern=$2
     local cron_job_path="${CRON_DIR}/${CNODE_VNAME}-${job}"
-    local cron_scripts_path="${CRON_SCRIPTS_DIR}/${CNODE_VNAME}-${job}.sh"
-    local cron_log_path="${LOG_DIR}/${CNODE_VNAME}-${job}.log"
+    local cron_scripts_path="${CRON_SCRIPTS_DIR}/${job}.sh"
+    local cron_log_path="${LOG_DIR}/${job}.log"
     is_file "${CRON_DIR}/${job}" && sudo rm "${CRON_DIR}/${job}"
     is_file "${cron_job_path}" && sudo rm "${cron_job_path}"
     local cron_job_entry="${cron_pattern} ${USER} /bin/sh ${cron_scripts_path} >> ${cron_log_path}"
