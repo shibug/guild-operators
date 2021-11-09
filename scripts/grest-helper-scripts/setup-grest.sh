@@ -98,9 +98,11 @@
     local job=$1
     local cron_pattern=$2
     local cron_job_path="${CRON_DIR}/${CNODE_VNAME}-${job}"
+    local cron_scripts_path="${CRON_SCRIPTS_DIR}/${CNODE_VNAME}-${job}.sh"
+    local cron_log_path="${LOG_DIR}/${CNODE_VNAME}-${job}.log"
     is_file "${CRON_DIR}/${job}" && sudo rm "${CRON_DIR}/${job}"
     is_file "${cron_job_path}" && sudo rm "${cron_job_path}"
-    local cron_job_entry="${cron_pattern} ${USER} /bin/sh ${cron_job_path}.sh >> ${LOG_DIR}/${CNODE_VNAME}-${job}.log"
+    local cron_job_entry="${cron_pattern} ${USER} /bin/sh ${cron_scripts_path} >> ${cron_log_path}"
     sudo bash -c "{ echo '${cron_job_entry}'; } > ${cron_job_path}"
   }
 
