@@ -57,7 +57,7 @@
         2) exit 1 ;;
       esac
       # check for setup-grest update
-      checkUpdate setup-grest.sh ${ENV_UPDATED}
+      checkUpdate setup-grest.sh ${ENV_UPDATED} N N grest-helper-scripts
     fi
     . "${PARENT}"/env offline &>/dev/null
     case $? in
