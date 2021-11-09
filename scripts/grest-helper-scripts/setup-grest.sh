@@ -82,10 +82,12 @@
 
   get_cron_job_executable() {
     local job=$1
+    local job_path="${CRON_SCRIPTS_DIR}/${CNODE_VNAME}-${job}.sh"
     local job_url="${URL_RAW}/files/grest/cron/jobs/${job}.sh"
-    if curl -s -f -m "${CURL_TIMEOUT}" -o "${CRON_SCRIPTS_DIR}/${job}.sh" "${job_url}"; then
-      echo -e "      Downloaded \e[32m${CRON_SCRIPTS_DIR}/${job}.sh\e[0m"
-      chmod +x "${CRON_SCRIPTS_DIR}/${job}.sh"
+    is_file "${job_path}" && sudo rm "${job_path}"
+    if curl -s -f -m "${CURL_TIMEOUT}" -o "${job_path}" "${job_url}"; then
+      echo -e "      Downloaded \e[32m${job_path}\e[0m"
+      chmod +x "${job_path}"
     else
       err_exit "Could not download ${job_url}"
     fi
@@ -94,23 +96,41 @@
   install_cron_job() {
     local job=$1
     local cron_pattern=$2
-    local cron_job_path="${CRON_DIR}/${job}"
-    if is_file "$CRON_DIR/${job}"; then
-      sudo rm "$CRON_DIR/${job}"
-    fi
-    local cron_job_entry="${cron_pattern} ${USER} /bin/sh ${CRON_SCRIPTS_DIR}/${job}.sh >> ${LOG_DIR}/${job}.log"
+    local cron_job_path="${CRON_DIR}/${CNODE_VNAME}-${job}"
+    is_file "${CRON_DIR}/${job}" && sudo rm "${CRON_DIR}/${job}"
+    is_file "${cron_job_path}" && sudo rm "${cron_job_path}"
+    local cron_job_entry="${cron_pattern} ${USER} /bin/sh ${cron_job_path}.sh >> ${LOG_DIR}/${CNODE_VNAME}-${job}.log"
     sudo bash -c "{ echo '${cron_job_entry}'; } > ${cron_job_path}"
+  }
+
+  set_cron_variables() {
+    local job=$1
+    [[ ${CNODE_VNAME} = cnode && ${PGDATABASE} = cexplorer ]] && return
+    sed -e "s@CNODE_VNAME=.*@CNODE_VNAME=${CNODE_VNAME}@" -e "s@DB_NAME=.*@DB_NAME=${PGDATABASE}@" -i "${CRON_SCRIPTS_DIR}/${CNODE_VNAME}-${job}.sh"
+  }
+
+  set_cron_asset_registry_testnet() {
+    sed -e "s@TR_URL=.*@TR_URL=https://github.com/input-output-hk/metadata-registry-testnet@" -e "s@TR_SUBDIR=.*@TR_SUBDIR=registry@" -i "${CRON_SCRIPTS_DIR}/${CNODE_VNAME}-asset-registry-update.sh"
   }
 
   setup_cron_jobs() {
     if ! is_dir "${CRON_SCRIPTS_DIR}"; then
-      mkdir "${CRON_SCRIPTS_DIR}"
+      mkdir -p "${CRON_SCRIPTS_DIR}"
     fi
     get_cron_job_executable "stake-distribution-update"
+    set_cron_variables "stake-distribution-update"
     install_cron_job "stake-distribution-update" "*/30 * * * *"
     
     get_cron_job_executable "pool-history-cache-update"
+    set_cron_variables "pool-history-cache-update"
     install_cron_job "pool-history-cache-update" "*/10 * * * *"
+
+    if [[ ${NWMAGIC} -eq 764824073 || ${NWMAGIC} -eq 1097911063 ]]; then
+      get_cron_job_executable "asset-registry-update"
+      set_cron_variables "asset-registry-update"
+      [[ ${NWMAGIC} -eq 1097911063 ]] && set_cron_asset_registry_testnet
+      install_cron_job "asset-registry-update" "*/10 * * * *"
+    fi
   }
   
   setup_defaults() {
